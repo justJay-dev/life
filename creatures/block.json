@@ -1,0 +1,15 @@
+{
+    "name": "Block",
+    "id": "block",
+    "description": "A stable 2x2 square that remains unchanged.",
+    "pattern": [
+        [
+            true,
+            true
+        ],
+        [
+            true,
+            true
+        ]
+    ]
+}

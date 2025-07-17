@@ -1,0 +1,31 @@
+{
+    "name": "Beacon",
+    "id": "beacon",
+    "description": "A stable pattern that resembles a beacon.",
+    "pattern": [
+        [
+            true,
+            true,
+            false,
+            false
+        ],
+        [
+            true,
+            true,
+            false,
+            false
+        ],
+        [
+            false,
+            false,
+            true,
+            true
+        ],
+        [
+            false,
+            false,
+            true,
+            true
+        ]
+    ]
+}

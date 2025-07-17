@@ -1,0 +1,22 @@
+{
+    "name": "Tub",
+    "id": "tub",
+    "description": "A stable pattern that resembles a tub.",
+    "pattern": [
+        [
+            false,
+            true,
+            false
+        ],
+        [
+            true,
+            false,
+            true
+        ],
+        [
+            false,
+            true,
+            false
+        ]
+    ]
+}

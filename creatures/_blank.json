@@ -1,0 +1,31 @@
+{
+    "name": "Blank",
+    "id": "blank",
+    "description": "A blank pattern.",
+    "pattern": [
+        [
+            true,
+            true,
+            true,
+            true
+        ],
+        [
+            true,
+            true,
+            true,
+            true
+        ],
+        [
+            true,
+            true,
+            true,
+            true
+        ],
+        [
+            true,
+            true,
+            true,
+            true
+        ]
+    ]
+}

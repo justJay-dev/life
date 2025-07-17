@@ -1,0 +1,19 @@
+{
+    "name": "Toad",
+    "id": "toad",
+    "description": "A pattern that shifts horizontally.",
+    "pattern": [
+        [
+            false,
+            true,
+            true,
+            true
+        ],
+        [
+            true,
+            true,
+            true,
+            false
+        ]
+    ]
+}

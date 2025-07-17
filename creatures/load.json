@@ -1,0 +1,25 @@
+{
+    "name": "Loaf",
+    "id": "loaf",
+    "description": "A stable pattern that resembles a loaf of bread.",
+    "pattern": [
+        [
+            false,
+            true,
+            true,
+            false
+        ],
+        [
+            true,
+            false,
+            false,
+            true
+        ],
+        [
+            false,
+            true,
+            true,
+            false
+        ]
+    ]
+}

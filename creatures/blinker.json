@@ -1,0 +1,22 @@
+{
+    "name": "Blinker",
+    "id": "blinker",
+    "description": "An oscillator that alternates between horizontal and vertical lines.",
+    "pattern": [
+        [
+            false,
+            true,
+            false
+        ],
+        [
+            false,
+            true,
+            false
+        ],
+        [
+            false,
+            true,
+            false
+        ]
+    ]
+}
