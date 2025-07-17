@@ -1,7 +1,7 @@
 -- Simulation Screen - Contains the actual Game of Life simulation
-local Config = require("engine/config")
-local State = require("engine/state")
-local creatures = require("creatures/init")
+local Config = require("engine.config")
+local State = require("engine.state")
+local creatures = require("creatures.init")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
 

@@ -1,5 +1,5 @@
 -- Main Menu Screen
-local Config = require("engine/config")
+local Config = require("engine.config")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
 
@@ -45,21 +45,30 @@ function MainMenuScreen:draw()
     local buttonWidth = 200
     local buttonHeight = 60
     local buttonX = (windowWidth - buttonWidth) / 2
-    local buttonY = windowHeight / 2
+    local buttonY = windowHeight / 2 - 40
 
-    -- Check if mouse is over button
+    -- Editor button
+    local editorButtonY = buttonY + buttonHeight + 20
+
+    -- Check if mouse is over buttons
     local mouseX, mouseY = love.mouse.getPosition()
-    local isHovered = self:isPointInRect(mouseX, mouseY, buttonX, buttonY, buttonWidth, buttonHeight)
+    local playHovered = self:isPointInRect(mouseX, mouseY, buttonX, buttonY, buttonWidth, buttonHeight)
+    local editorHovered = self:isPointInRect(mouseX, mouseY, buttonX, editorButtonY, buttonWidth, buttonHeight)
 
-    -- Draw button using base class method
+    -- Draw buttons using base class method
     local buttonFont = love.graphics.newFont(24)
     love.graphics.setFont(buttonFont)
-    self:drawButton(buttonX, buttonY, buttonWidth, buttonHeight, "PLAY", isHovered, buttonFont)
+    self:drawButton(buttonX, buttonY, buttonWidth, buttonHeight, "PLAY", playHovered, buttonFont)
+    self:drawButton(buttonX, editorButtonY, buttonWidth, buttonHeight, "EDITOR", editorHovered, buttonFont)
+
+    -- Store button coordinates for click detection
+    self.playButton = { x = buttonX, y = buttonY, width = buttonWidth, height = buttonHeight }
+    self.editorButton = { x = buttonX, y = editorButtonY, width = buttonWidth, height = buttonHeight }
 
     -- Instructions
     love.graphics.setFont(love.graphics.newFont(16))
     love.graphics.setColor(0.7, 0.7, 0.7)
-    local instructions = "Click PLAY to start the simulation\nPress ESC to quit"
+    local instructions = "Click PLAY to start the simulation\nClick EDITOR to create creatures\nPress ESC to quit"
     local instrFont = love.graphics.getFont()
     local instrX, instrY = self:centerText("Click PLAY to start the simulation", instrFont, windowHeight * 3 / 4)
     love.graphics.print(instructions, instrX, instrY)
@@ -71,22 +80,22 @@ function MainMenuScreen:keypressed(key)
     elseif key == "return" or key == "space" then
         -- Enter or Space can also start the game
         ScreenManager:switchTo("simulation")
+    elseif key == "e" then
+        -- E key opens editor
+        ScreenManager:switchTo("creature_editor")
     end
 end
 
 function MainMenuScreen:mousepressed(x, y, button)
     if button == 1 then -- Left mouse button
-        local windowWidth = love.graphics.getWidth()
-        local windowHeight = love.graphics.getHeight()
-
         -- Check if click is on play button
-        local buttonWidth = 200
-        local buttonHeight = 60
-        local buttonX = (windowWidth - buttonWidth) / 2
-        local buttonY = windowHeight / 2
-
-        if self:isPointInRect(x, y, buttonX, buttonY, buttonWidth, buttonHeight) then
+        if self.playButton and self:isPointInRect(x, y, self.playButton.x, self.playButton.y,
+                self.playButton.width, self.playButton.height) then
             ScreenManager:switchTo("simulation")
+            -- Check if click is on editor button
+        elseif self.editorButton and self:isPointInRect(x, y, self.editorButton.x, self.editorButton.y,
+                self.editorButton.width, self.editorButton.height) then
+            ScreenManager:switchTo("creature_editor")
         end
     end
 end
