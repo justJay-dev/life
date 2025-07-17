@@ -4,18 +4,18 @@ local creatures = {}
 
 -- Load all pattern modules (now they return Creature instances)
 -- shapes
-creatures.block = Creature.loadFromFile("creatures/block.json")
-creatures.bee_hive = Creature.loadFromFile("creatures/bee-hive.json")
-creatures.boat = Creature.loadFromFile("creatures/boat.json")
-creatures.tub = Creature.loadFromFile("creatures/tub.json")
-creatures.beacon = Creature.loadFromFile("creatures/beacon.json")
-creatures.loaf = Creature.loadFromFile("creatures/loaf.json")
+creatures.beacon = Creature.loadFromFile("creatures/shapes/beacon.json")
+creatures.bee_hive = Creature.loadFromFile("creatures/shapes/bee-hive.json")
+creatures.block = Creature.loadFromFile("creatures/shapes/block.json")
+creatures.boat = Creature.loadFromFile("creatures/shapes/boat.json")
+creatures.loaf = Creature.loadFromFile("creatures/shapes/loaf.json")
+creatures.tub = Creature.loadFromFile("creatures/shapes/tub.json")
 -- oscillators
-creatures.blinker = Creature.loadFromFile("creatures/blinker.json")
-creatures.toad = Creature.loadFromFile("creatures/toad.json")
-creatures.pulsar = Creature.loadFromFile("creatures/pulsar.json")
+creatures.blinker = Creature.loadFromFile("creatures/oscillators/blinker.json")
+creatures.toad = Creature.loadFromFile("creatures/oscillators/toad.json")
+creatures.pulsar = Creature.loadFromFile("creatures/oscillators/pulsar.json")
 -- -- space ships
-creatures.glider = Creature.loadFromFile("creatures/glider.json")
+creatures.glider = Creature.loadFromFile("creatures/ships/glider.json")
 
 -- Function to spawn a creature by name
 function creatures.spawn(name, grid, x, y, gridWidth, gridHeight)
