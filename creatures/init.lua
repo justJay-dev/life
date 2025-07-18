@@ -14,8 +14,37 @@ creatures.tub = Creature.loadFromFile("creatures/shapes/tub.json")
 creatures.blinker = Creature.loadFromFile("creatures/oscillators/blinker.json")
 creatures.toad = Creature.loadFromFile("creatures/oscillators/toad.json")
 creatures.pulsar = Creature.loadFromFile("creatures/oscillators/pulsar.json")
--- -- space ships
+-- space ships
 creatures.glider = Creature.loadFromFile("creatures/ships/glider.json")
+
+-- Function to load custom creatures from directory
+local function loadCustomCreatures()
+    local customDir = "creatures/custom"
+    local files = love.filesystem.getDirectoryItems(customDir)
+
+    for _, filename in ipairs(files) do
+        -- Check if it's a JSON file
+        if filename:match("%.json$") then
+            local filepath = customDir .. "/" .. filename
+            print("Loading custom creature: " .. filepath)
+
+            -- Extract creature name from filename (remove .json extension)
+            local creatureName = filename:gsub("%.json$", "")
+
+            -- Load the creature
+            local creature = Creature.loadFromFile(filepath)
+            if creature then
+                creatures[creatureName] = creature
+                print("Successfully loaded custom creature: " .. creatureName)
+            else
+                print("Failed to load custom creature: " .. filename)
+            end
+        end
+    end
+end
+
+-- Load custom creatures
+loadCustomCreatures()
 
 -- Function to spawn a creature by name
 function creatures.spawn(name, grid, x, y, gridWidth, gridHeight)
@@ -106,6 +135,26 @@ function creatures.spawnRandom(grid, gridWidth, gridHeight, count)
     end
 
     return spawned
+end
+
+-- Function to reload custom creatures (useful for development)
+function creatures.reloadCustom()
+    -- Remove existing custom creatures
+    for name, creature in pairs(creatures) do
+        if type(creature) == "table" and creature.create then
+            -- Check if it's a custom creature (you might want to add a flag for this)
+            local isBuiltIn = name == "beacon" or name == "bee_hive" or name == "block" or
+                name == "boat" or name == "loaf" or name == "tub" or
+                name == "blinker" or name == "toad" or name == "pulsar" or
+                name == "glider"
+            if not isBuiltIn then
+                creatures[name] = nil
+            end
+        end
+    end
+
+    -- Reload custom creatures
+    loadCustomCreatures()
 end
 
 return creatures

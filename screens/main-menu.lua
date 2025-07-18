@@ -2,12 +2,31 @@
 local Config = require("engine.config")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
+local Button = require("ui.button")
 
 local MainMenuScreen = GameScreen:new()
 
 function MainMenuScreen:enter()
     -- Reset any game state when entering menu
     love.window.setTitle("Conway's Game of Life - Main Menu")
+
+    -- Create buttons
+    local windowWidth = love.graphics.getWidth()
+    local windowHeight = love.graphics.getHeight()
+
+    local buttonWidth = 200
+    local buttonHeight = 60
+    local buttonX = (windowWidth - buttonWidth) / 2
+    local buttonY = windowHeight / 2 - 40
+    local editorButtonY = buttonY + buttonHeight + 20
+
+    self.playButton = Button:new(buttonX, buttonY, buttonWidth, buttonHeight, "PLAY", function()
+        ScreenManager:switchTo("simulation")
+    end)
+
+    self.editorButton = Button:new(buttonX, editorButtonY, buttonWidth, buttonHeight, "EDITOR", function()
+        ScreenManager:switchTo("creature_editor")
+    end)
 end
 
 function MainMenuScreen:leave()
@@ -15,7 +34,13 @@ function MainMenuScreen:leave()
 end
 
 function MainMenuScreen:update(dt)
-    -- Menu doesn't need updates, but we could add animations here
+    -- Update buttons
+    if self.playButton then
+        self.playButton:update(dt)
+    end
+    if self.editorButton then
+        self.editorButton:update(dt)
+    end
 end
 
 function MainMenuScreen:draw()
@@ -41,29 +66,11 @@ function MainMenuScreen:draw()
     local subtitleX, subtitleY = self:centerText(subtitle, subtitleFont, windowHeight / 4 + 80)
     love.graphics.print(subtitle, subtitleX, subtitleY)
 
-    -- Play button
-    local buttonWidth = 200
-    local buttonHeight = 60
-    local buttonX = (windowWidth - buttonWidth) / 2
-    local buttonY = windowHeight / 2 - 40
-
-    -- Editor button
-    local editorButtonY = buttonY + buttonHeight + 20
-
-    -- Check if mouse is over buttons
-    local mouseX, mouseY = love.mouse.getPosition()
-    local playHovered = self:isPointInRect(mouseX, mouseY, buttonX, buttonY, buttonWidth, buttonHeight)
-    local editorHovered = self:isPointInRect(mouseX, mouseY, buttonX, editorButtonY, buttonWidth, buttonHeight)
-
-    -- Draw buttons using base class method
-    local buttonFont = love.graphics.newFont(24)
-    love.graphics.setFont(buttonFont)
-    self:drawButton(buttonX, buttonY, buttonWidth, buttonHeight, "PLAY", playHovered, buttonFont)
-    self:drawButton(buttonX, editorButtonY, buttonWidth, buttonHeight, "EDITOR", editorHovered, buttonFont)
-
-    -- Store button coordinates for click detection
-    self.playButton = { x = buttonX, y = buttonY, width = buttonWidth, height = buttonHeight }
-    self.editorButton = { x = buttonX, y = editorButtonY, width = buttonWidth, height = buttonHeight }
+    -- Draw buttons
+    if self.playButton and self.editorButton then
+        self.playButton:draw()
+        self.editorButton:draw()
+    end
 
     -- Instructions
     love.graphics.setFont(love.graphics.newFont(16))
@@ -88,14 +95,11 @@ end
 
 function MainMenuScreen:mousepressed(x, y, button)
     if button == 1 then -- Left mouse button
-        -- Check if click is on play button
-        if self.playButton and self:isPointInRect(x, y, self.playButton.x, self.playButton.y,
-                self.playButton.width, self.playButton.height) then
-            ScreenManager:switchTo("simulation")
-            -- Check if click is on editor button
-        elseif self.editorButton and self:isPointInRect(x, y, self.editorButton.x, self.editorButton.y,
-                self.editorButton.width, self.editorButton.height) then
-            ScreenManager:switchTo("creature_editor")
+        if self.playButton then
+            self.playButton:mousepressed(button)
+        end
+        if self.editorButton then
+            self.editorButton:mousepressed(button)
         end
     end
 end

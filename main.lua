@@ -9,7 +9,7 @@ local CreatureEditorScreen = require("screens.creature-editor")
 
 function love.load()
     -- Set window size
-    love.window.setMode(Config.gridWidth * Config.cellSize, Config.gridHeight * Config.cellSize + 40)
+    love.window.setMode((Config.gridWidth + 20) * Config.cellSize, (Config.gridHeight + 20) * Config.cellSize)
 
     -- Initialize screen manager
     ScreenManager:addScreen("main_menu", MainMenuScreen)

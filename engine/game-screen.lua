@@ -56,31 +56,34 @@ function GameScreen:centerText(text, font, y)
     return (windowWidth - textWidth) / 2, y
 end
 
-function GameScreen:drawButton(x, y, width, height, text, isHovered, font)
-    font = font or love.graphics.getFont()
+-- Grid drawing methods
+function GameScreen:drawGrid(grid, aliveColor, deadColor)
+    local Config = require("engine.config")
+    aliveColor = aliveColor or { 1, 1, 1 }     -- Default white
+    deadColor = deadColor or { 0.1, 0.1, 0.1 } -- Default dark gray
 
-    -- Draw button background
-    if isHovered then
-        love.graphics.setColor(0.3, 0.6, 0.9) -- Light blue when hovered
-    else
-        love.graphics.setColor(0.2, 0.4, 0.7) -- Dark blue normally
+    for x = 1, Config.gridWidth do
+        for y = 1, Config.gridHeight do
+            local screenX = (x - 1) * Config.cellSize
+            local screenY = (y - 1) * Config.cellSize
+
+            if grid[x][y] then
+                love.graphics.setColor(aliveColor[1], aliveColor[2], aliveColor[3])
+                love.graphics.rectangle("fill", screenX, screenY, Config.cellSize, Config.cellSize)
+            else
+                love.graphics.setColor(deadColor[1], deadColor[2], deadColor[3])
+                love.graphics.rectangle("line", screenX, screenY, Config.cellSize, Config.cellSize)
+            end
+        end
     end
-    love.graphics.rectangle("fill", x, y, width, height)
-
-    -- Draw button border
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("line", x, y, width, height)
-
-    -- Draw button text
-    local textWidth = font:getWidth(text)
-    local textHeight = font:getHeight()
-    love.graphics.print(text,
-        x + (width - textWidth) / 2,
-        y + (height - textHeight) / 2)
 end
 
-function GameScreen:isPointInRect(px, py, x, y, width, height)
-    return px >= x and px <= x + width and py >= y and py <= y + height
+function GameScreen:drawSimulationGrid(grid)
+    self:drawGrid(grid, { 1, 1, 1 }, { 0.1, 0.1, 0.1 }) -- White alive, dark gray dead
+end
+
+function GameScreen:drawEditorGrid(grid)
+    self:drawGrid(grid, { 0.9, 0.9, 0.9 }, { 0.2, 0.2, 0.2 }) -- Light gray alive, darker gray dead
 end
 
 return GameScreen

@@ -49,20 +49,8 @@ function SimulationScreen:draw()
     -- Clear background
     love.graphics.clear(0, 0, 0)
 
-    -- Draw grid
-    for x = 1, Config.gridWidth do
-        for y = 1, Config.gridHeight do
-            if State.grid[x][y] then
-                love.graphics.setColor(1, 1, 1) -- White for alive cells
-                love.graphics.rectangle("fill", (x - 1) * Config.cellSize, (y - 1) * Config.cellSize,
-                    Config.cellSize, Config.cellSize)
-            else
-                love.graphics.setColor(0.1, 0.1, 0.1) -- Dark gray for dead cells
-                love.graphics.rectangle("line", (x - 1) * Config.cellSize, (y - 1) * Config.cellSize,
-                    Config.cellSize, Config.cellSize)
-            end
-        end
-    end
+    -- Draw grid using inherited method
+    self:drawSimulationGrid(State.grid)
 
     -- Draw UI
     love.graphics.setColor(1, 1, 1)
