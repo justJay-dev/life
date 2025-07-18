@@ -13,7 +13,6 @@ function LeftMenu:new(x, y, width)
     instance.backgroundColor = { 0.1, 0.1, 0.1, 0.9 } -- Dark semi-transparent background
     instance.borderColor = { 0.4, 0.4, 0.4 }
     instance.textColor = { 1, 1, 1 }
-    instance.visible = true
     instance.scrollOffset = 0
     instance.maxScrollOffset = 0
     instance.creatureButtons = {}
@@ -135,8 +134,6 @@ function LeftMenu:setOnCreatureSelect(callback)
 end
 
 function LeftMenu:update(dt)
-    if not self.visible then return end
-
     -- Update creature buttons
     for _, item in ipairs(self.creatureButtons) do
         if item.update then
@@ -146,8 +143,6 @@ function LeftMenu:update(dt)
 end
 
 function LeftMenu:draw()
-    if not self.visible then return end
-
     -- Save current graphics state
     local previousColor = { love.graphics.getColor() }
     local previousFont = love.graphics.getFont()
@@ -223,8 +218,6 @@ function LeftMenu:draw()
 end
 
 function LeftMenu:mousepressed(x, y, button)
-    if not self.visible then return false end
-
     -- Check if click is within menu bounds
     if x < self.x or x > self.x + self.width or y < self.y or y > self.y + self.height then
         return false
@@ -246,8 +239,6 @@ function LeftMenu:mousepressed(x, y, button)
 end
 
 function LeftMenu:mousemoved(x, y)
-    if not self.visible then return end
-
     -- Update hover states for creature buttons
     for _, item in ipairs(self.creatureButtons) do
         if item.mousemoved then
@@ -262,8 +253,6 @@ function LeftMenu:mousemoved(x, y)
 end
 
 function LeftMenu:wheelmoved(x, y)
-    if not self.visible then return false end
-
     -- Get mouse position to check if it's over the menu
     local mouseX, mouseY = love.mouse.getPosition()
     if mouseX < self.x or mouseX > self.x + self.width or mouseY < self.y or mouseY > self.y + self.height then
@@ -276,18 +265,6 @@ function LeftMenu:wheelmoved(x, y)
     self.scrollOffset = math.max(0, math.min(self.scrollOffset, self.maxScrollOffset))
 
     return true
-end
-
-function LeftMenu:toggle()
-    self.visible = not self.visible
-end
-
-function LeftMenu:show()
-    self.visible = true
-end
-
-function LeftMenu:hide()
-    self.visible = false
 end
 
 function LeftMenu:refresh()

@@ -14,7 +14,7 @@ function SimulationScreen:enter()
 
     -- Initialize grids
     self:initializeGrid()
-
+    local leftMenuWidth = self.leftMenu and self.leftMenu.width or 0
     -- Create left menu
     self.leftMenu = LeftMenu:new(0, 0, 220)
     self.leftMenu:setOnCreatureSelect(function(creatureName, creature)
@@ -62,7 +62,7 @@ function SimulationScreen:draw()
     love.graphics.clear(0, 0, 0)
 
     -- Calculate grid offset based on left menu
-    local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+    local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
 
     -- Save current transform
     love.graphics.push()
@@ -75,7 +75,7 @@ function SimulationScreen:draw()
     love.graphics.setColor(1, 1, 1)
     local statusText = State.running and "Running (SPACE to pause)" or "Paused (SPACE to start)"
     love.graphics.print(statusText, 10, Config.gridHeight * Config.cellSize + 10)
-    love.graphics.print("Click to toggle cells | R to reset | M for menu | L to toggle creature list | ESC to quit", 10,
+    love.graphics.print("Click to toggle cells | R to reset | M for menu | ESC to quit", 10,
         Config.gridHeight * Config.cellSize + 25)
 
     -- Restore transform
@@ -135,7 +135,7 @@ function SimulationScreen:mousepressed(x, y, button)
 
     if button == 1 then -- Left mouse button
         -- Adjust for grid offset
-        local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+        local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
         local adjustedX = x - gridOffsetX
 
         local gridX = math.floor(adjustedX / Config.cellSize) + 1
@@ -158,11 +158,6 @@ function SimulationScreen:keypressed(key)
     elseif key == "m" then
         -- Go back to main menu
         ScreenManager:switchTo("main_menu")
-    elseif key == "l" then
-        -- Toggle left menu visibility
-        if self.leftMenu then
-            self.leftMenu:toggle()
-        end
     elseif key == "escape" then
         love.event.quit()
     end

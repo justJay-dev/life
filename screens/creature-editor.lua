@@ -43,7 +43,10 @@ function CreatureEditorScreen:createButtons()
     local buttonSpacing = 10
     local buttonFont = love.graphics.newFont(12)
 
-    -- Create main UI buttons
+    -- Account for left menu offset when positioning buttons
+    local leftMenuWidth = self.leftMenu and self.leftMenu.width or 0
+
+    -- Create main UI buttons (positioned relative to the grid area, not absolute screen)
     self.clearButton = Button:new(10, buttonY, 60, buttonHeight, "Clear", function()
         self:clearGrid()
     end, buttonFont)
@@ -65,7 +68,7 @@ function CreatureEditorScreen:createButtons()
         end
     end, buttonFont)
 
-    self.backButton = Button:new(windowWidth - 70, buttonY, 60, buttonHeight, "Back", function()
+    self.backButton = Button:new(windowWidth - leftMenuWidth - 70, buttonY, 60, buttonHeight, "Back", function()
         ScreenManager:switchTo("main_menu")
     end, buttonFont)
 end
@@ -105,17 +108,40 @@ function CreatureEditorScreen:update(dt)
         self.leftMenu:update(dt)
     end
 
-    -- Update button hover states
-    if self.clearButton then self.clearButton:update(dt) end
-    if self.nameButton then self.nameButton:update(dt) end
-    if self.descButton then self.descButton:update(dt) end
+    -- Update button hover states with adjusted coordinates
+    local mx, my = love.mouse.getPosition()
+    local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
+    local adjustedMx = mx - gridOffsetX
+
+    -- Manually update hover states for buttons since they're in transformed coordinates
+    if self.clearButton then
+        self.clearButton.hovered = self.clearButton.enabled and
+            adjustedMx >= self.clearButton.x and adjustedMx <= self.clearButton.x + self.clearButton.width and
+            my >= self.clearButton.y and my <= self.clearButton.y + self.clearButton.height
+    end
+    if self.nameButton then
+        self.nameButton.hovered = self.nameButton.enabled and
+            adjustedMx >= self.nameButton.x and adjustedMx <= self.nameButton.x + self.nameButton.width and
+            my >= self.nameButton.y and my <= self.nameButton.y + self.nameButton.height
+    end
+    if self.descButton then
+        self.descButton.hovered = self.descButton.enabled and
+            adjustedMx >= self.descButton.x and adjustedMx <= self.descButton.x + self.descButton.width and
+            my >= self.descButton.y and my <= self.descButton.y + self.descButton.height
+    end
     if self.saveButton then
         -- Update save button enabled state
         local canSave = self.creatureName ~= "" and self:hasPattern()
         self.saveButton:setEnabled(canSave)
-        self.saveButton:update(dt)
+        self.saveButton.hovered = self.saveButton.enabled and
+            adjustedMx >= self.saveButton.x and adjustedMx <= self.saveButton.x + self.saveButton.width and
+            my >= self.saveButton.y and my <= self.saveButton.y + self.saveButton.height
     end
-    if self.backButton then self.backButton:update(dt) end
+    if self.backButton then
+        self.backButton.hovered = self.backButton.enabled and
+            adjustedMx >= self.backButton.x and adjustedMx <= self.backButton.x + self.backButton.width and
+            my >= self.backButton.y and my <= self.backButton.y + self.backButton.height
+    end
 
     -- Update dialogs
     if self.nameDialog then self.nameDialog:update(dt) end
@@ -127,7 +153,7 @@ function CreatureEditorScreen:draw()
     love.graphics.clear(0.05, 0.05, 0.15)
 
     -- Calculate grid offset based on left menu
-    local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+    local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
 
     -- Save current transform
     love.graphics.push()
@@ -254,25 +280,36 @@ function CreatureEditorScreen:mousepressed(x, y, button)
         -- Only handle main UI if no dialogs are visible
         if not (self.nameDialog and self.nameDialog:isVisible()) and
             not (self.descDialog and self.descDialog:isVisible()) then
-            -- Handle main UI button clicks
-            if self.clearButton then self.clearButton:mousepressed(button) end
-            if self.nameButton then self.nameButton:mousepressed(button) end
-            if self.descButton then self.descButton:mousepressed(button) end
-            if self.saveButton then self.saveButton:mousepressed(button) end
-            if self.backButton then self.backButton:mousepressed(button) end
-
-            -- Handle grid clicks and start dragging
-            -- Adjust for grid offset
-            local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+            -- Adjust mouse coordinates for button clicks (they're in the transformed coordinate system)
+            local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
             local adjustedX = x - gridOffsetX
 
-            local gridX = math.floor(adjustedX / Config.cellSize) + 1
-            local gridY = math.floor(y / Config.cellSize) + 1
+            -- Handle main UI button clicks manually since buttons use global mouse coordinates
+            if self.clearButton and adjustedX >= self.clearButton.x and adjustedX <= self.clearButton.x + self.clearButton.width and
+                y >= self.clearButton.y and y <= self.clearButton.y + self.clearButton.height and self.clearButton.enabled then
+                self.clearButton.callback()
+            elseif self.nameButton and adjustedX >= self.nameButton.x and adjustedX <= self.nameButton.x + self.nameButton.width and
+                y >= self.nameButton.y and y <= self.nameButton.y + self.nameButton.height and self.nameButton.enabled then
+                self.nameButton.callback()
+            elseif self.descButton and adjustedX >= self.descButton.x and adjustedX <= self.descButton.x + self.descButton.width and
+                y >= self.descButton.y and y <= self.descButton.y + self.descButton.height and self.descButton.enabled then
+                self.descButton.callback()
+            elseif self.saveButton and adjustedX >= self.saveButton.x and adjustedX <= self.saveButton.x + self.saveButton.width and
+                y >= self.saveButton.y and y <= self.saveButton.y + self.saveButton.height and self.saveButton.enabled then
+                self.saveButton.callback()
+            elseif self.backButton and adjustedX >= self.backButton.x and adjustedX <= self.backButton.x + self.backButton.width and
+                y >= self.backButton.y and y <= self.backButton.y + self.backButton.height and self.backButton.enabled then
+                self.backButton.callback()
+            else
+                -- Handle grid clicks and start dragging only if no button was clicked
+                local gridX = math.floor(adjustedX / Config.cellSize) + 1
+                local gridY = math.floor(y / Config.cellSize) + 1
 
-            if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-                -- Start dragging and toggle the cell
-                self.isDragging = true
-                self:toggleCell(gridX, gridY)
+                if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
+                    -- Start dragging and toggle the cell
+                    self.isDragging = true
+                    self:toggleCell(gridX, gridY)
+                end
             end
         end
     end
@@ -295,7 +332,7 @@ function CreatureEditorScreen:mousemoved(x, y, dx, dy)
     if self.isDragging and not (self.nameDialog and self.nameDialog:isVisible()) and
         not (self.descDialog and self.descDialog:isVisible()) then
         -- Adjust for grid offset
-        local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+        local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
         local adjustedX = x - gridOffsetX
 
         local gridX = math.floor(adjustedX / Config.cellSize) + 1
@@ -325,11 +362,6 @@ function CreatureEditorScreen:keypressed(key)
             ScreenManager:switchTo("main_menu")
         elseif key == "r" or key == "c" then
             self:clearGrid()
-        elseif key == "l" then
-            -- Toggle left menu visibility
-            if self.leftMenu then
-                self.leftMenu:toggle()
-            end
         end
     end
 end
