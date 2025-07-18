@@ -65,6 +65,10 @@ function CreatureEditorScreen:createButtons()
         if self.creatureName ~= "" and self:hasPattern() then
             local success, message = self:saveCreature()
             print(message) -- You could show this in a popup later
+            if success and self.leftMenu then
+                -- Refresh the left menu to show the newly saved creature
+                self.leftMenu:refresh()
+            end
         end
     end, buttonFont)
 

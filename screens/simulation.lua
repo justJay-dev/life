@@ -14,7 +14,6 @@ function SimulationScreen:enter()
 
     -- Initialize grids
     self:initializeGrid()
-    local leftMenuWidth = self.leftMenu and self.leftMenu.width or 0
     -- Create left menu
     self.leftMenu = LeftMenu:new(0, 0, 220)
     self.leftMenu:setOnCreatureSelect(function(creatureName, creature)
@@ -77,6 +76,8 @@ function SimulationScreen:draw()
     love.graphics.print(statusText, 10, Config.gridHeight * Config.cellSize + 10)
     love.graphics.print("Click to toggle cells | R to reset | M for menu | ESC to quit", 10,
         Config.gridHeight * Config.cellSize + 25)
+
+
 
     -- Restore transform
     love.graphics.pop()
@@ -177,14 +178,42 @@ function SimulationScreen:wheelmoved(x, y)
 end
 
 function SimulationScreen:onCreatureSelected(creatureName, creature)
-    -- You can add logic here to handle creature selection
-    -- For example, you might want to show creature info or prepare for placement
-    print("Selected creature: " .. creatureName)
-    if creature and creature.name then
-        print("Creature name: " .. creature.name)
+    if creature and creature.pattern then
+        self:spawnCreatureRandomly(creature)
     end
-    if creature and creature.description then
-        print("Description: " .. creature.description)
+end
+
+function SimulationScreen:spawnCreatureRandomly(creature)
+    if not creature or not creature.pattern then return end
+
+    -- Get pattern dimensions
+    local patternHeight = #creature.pattern
+    local patternWidth = patternHeight > 0 and #creature.pattern[1] or 0
+
+    if patternWidth == 0 or patternHeight == 0 then return end
+
+    -- Find a valid random position (with some margin from edges)
+    local margin = 2
+    local maxX = Config.gridWidth - patternWidth - margin
+    local maxY = Config.gridHeight - patternHeight - margin
+
+    if maxX < margin or maxY < margin then return end
+
+    -- Place it at a random location
+    local startX = math.random(margin + 1, maxX)
+    local startY = math.random(margin + 1, maxY)
+
+    -- Place the pattern
+    for py = 1, patternHeight do
+        for px = 1, patternWidth do
+            if creature.pattern[py][px] then
+                local gridX = startX + px - 1
+                local gridY = startY + py - 1
+                if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
+                    State.grid[gridX][gridY] = true
+                end
+            end
+        end
     end
 end
 
