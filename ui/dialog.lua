@@ -17,6 +17,10 @@ function Dialog:new(title, initialText, onConfirm, onCancel)
     instance.width = 400
     instance.height = 150
 
+    -- Cursor blinking
+    instance.cursorTimer = 0
+    instance.cursorVisible = true
+
     return instance
 end
 
@@ -51,6 +55,13 @@ end
 
 function Dialog:update(dt)
     if not self.visible then return end
+
+    -- Update cursor blinking
+    self.cursorTimer = self.cursorTimer + dt
+    if self.cursorTimer >= 0.5 then -- Blink every 0.5 seconds
+        self.cursorVisible = not self.cursorVisible
+        self.cursorTimer = 0
+    end
 
     if self.okButton then self.okButton:update(dt) end
     if self.cancelButton then self.cancelButton:update(dt) end
@@ -90,6 +101,15 @@ function Dialog:draw()
     love.graphics.rectangle("line", inputX, inputY, inputWidth, inputHeight)
     love.graphics.print(self.inputText, inputX + 5, inputY + 5)
 
+    -- Draw blinking cursor
+    if self.cursorVisible then
+        local textWidth = love.graphics.getFont():getWidth(self.inputText)
+        local cursorX = inputX + 5 + textWidth
+        local cursorY = inputY + 3
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.rectangle("fill", cursorX, cursorY, 1, inputHeight - 6)
+    end
+
     -- Draw buttons
     if self.okButton then self.okButton:draw() end
     if self.cancelButton then self.cancelButton:draw() end
@@ -119,12 +139,18 @@ function Dialog:keypressed(key)
         end
     elseif key == "backspace" then
         self.inputText = self.inputText:sub(1, -2)
+        -- Reset cursor blink when deleting
+        self.cursorTimer = 0
+        self.cursorVisible = true
     end
 end
 
 function Dialog:textinput(text)
     if not self.visible then return end
     self.inputText = self.inputText .. text
+    -- Reset cursor blink when typing
+    self.cursorTimer = 0
+    self.cursorVisible = true
 end
 
 function Dialog:setTitle(title)

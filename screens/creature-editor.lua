@@ -5,6 +5,7 @@ local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
 local Button = require("ui.button")
 local Dialog = require("ui.dialog")
+local LeftMenu = require("ui.left-menu")
 
 local CreatureEditorScreen = GameScreen:new()
 
@@ -16,8 +17,17 @@ function CreatureEditorScreen:enter()
     self.creatureName = ""
     self.creatureDescription = ""
 
+    -- Initialize drag state
+    self.isDragging = false
+
     -- Initialize empty grid
     self:clearGrid()
+
+    -- Create left menu
+    self.leftMenu = LeftMenu:new(0, 0, 220)
+    self.leftMenu:setOnCreatureSelect(function(creatureName, creature)
+        self:onCreatureSelected(creatureName, creature)
+    end)
 
     -- Create buttons
     self:createButtons()
@@ -90,6 +100,11 @@ function CreatureEditorScreen:leave()
 end
 
 function CreatureEditorScreen:update(dt)
+    -- Update left menu
+    if self.leftMenu then
+        self.leftMenu:update(dt)
+    end
+
     -- Update button hover states
     if self.clearButton then self.clearButton:update(dt) end
     if self.nameButton then self.nameButton:update(dt) end
@@ -111,13 +126,28 @@ function CreatureEditorScreen:draw()
     -- Clear background
     love.graphics.clear(0.05, 0.05, 0.15)
 
+    -- Calculate grid offset based on left menu
+    local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+
+    -- Save current transform
+    love.graphics.push()
+    love.graphics.translate(gridOffsetX, 0)
+
     -- Draw grid using inherited method
     self:drawEditorGrid(self.editorGrid)
 
     -- Draw UI
     self:drawUI()
 
-    -- Draw dialogs
+    -- Restore transform
+    love.graphics.pop()
+
+    -- Draw left menu on top
+    if self.leftMenu then
+        self.leftMenu:draw()
+    end
+
+    -- Draw dialogs on top of everything
     if self.nameDialog then self.nameDialog:draw() end
     if self.descDialog then self.descDialog:draw() end
 end
@@ -134,7 +164,7 @@ function CreatureEditorScreen:drawUI()
     -- Instructions
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(love.graphics.newFont(14))
-    love.graphics.print("Click to toggle cells | Name: " .. self.creatureName, 10, uiY)
+    love.graphics.print("Click or drag to draw/erase cells | Name: " .. self.creatureName, 10, uiY)
 
     -- Draw buttons
     if self.clearButton then self.clearButton:draw() end
@@ -216,6 +246,11 @@ function CreatureEditorScreen:mousepressed(x, y, button)
         if self.nameDialog then self.nameDialog:mousepressed(x, y, button) end
         if self.descDialog then self.descDialog:mousepressed(x, y, button) end
 
+        -- Check if left menu handled the click
+        if self.leftMenu and self.leftMenu:mousepressed(x, y, button) then
+            return
+        end
+
         -- Only handle main UI if no dialogs are visible
         if not (self.nameDialog and self.nameDialog:isVisible()) and
             not (self.descDialog and self.descDialog:isVisible()) then
@@ -226,15 +261,56 @@ function CreatureEditorScreen:mousepressed(x, y, button)
             if self.saveButton then self.saveButton:mousepressed(button) end
             if self.backButton then self.backButton:mousepressed(button) end
 
-            -- Handle grid clicks
-            local gridX = math.floor(x / Config.cellSize) + 1
+            -- Handle grid clicks and start dragging
+            -- Adjust for grid offset
+            local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+            local adjustedX = x - gridOffsetX
+
+            local gridX = math.floor(adjustedX / Config.cellSize) + 1
             local gridY = math.floor(y / Config.cellSize) + 1
 
             if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-                self.editorGrid[gridX][gridY] = not self.editorGrid[gridX][gridY]
+                -- Start dragging and toggle the cell
+                self.isDragging = true
+                self:toggleCell(gridX, gridY)
             end
         end
     end
+end
+
+function CreatureEditorScreen:mousereleased(x, y, button)
+    if button == 1 then -- Left mouse button
+        -- Stop dragging
+        self.isDragging = false
+    end
+end
+
+function CreatureEditorScreen:mousemoved(x, y, dx, dy)
+    -- Update left menu hover states
+    if self.leftMenu then
+        self.leftMenu:mousemoved(x, y)
+    end
+
+    -- Handle dragging - simply fill the cell under the mouse
+    if self.isDragging and not (self.nameDialog and self.nameDialog:isVisible()) and
+        not (self.descDialog and self.descDialog:isVisible()) then
+        -- Adjust for grid offset
+        local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+        local adjustedX = x - gridOffsetX
+
+        local gridX = math.floor(adjustedX / Config.cellSize) + 1
+        local gridY = math.floor(y / Config.cellSize) + 1
+
+        if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
+            -- Simply set the cell to alive (true)
+            self.editorGrid[gridX][gridY] = true
+        end
+    end
+end
+
+-- Simple function to toggle a cell's state
+function CreatureEditorScreen:toggleCell(x, y)
+    self.editorGrid[x][y] = not self.editorGrid[x][y]
 end
 
 function CreatureEditorScreen:keypressed(key)
@@ -247,9 +323,44 @@ function CreatureEditorScreen:keypressed(key)
         not (self.descDialog and self.descDialog:isVisible()) then
         if key == "escape" or key == "m" then
             ScreenManager:switchTo("main_menu")
-        elseif key == "c" then
+        elseif key == "r" or key == "c" then
             self:clearGrid()
+        elseif key == "l" then
+            -- Toggle left menu visibility
+            if self.leftMenu then
+                self.leftMenu:toggle()
+            end
         end
+    end
+end
+
+function CreatureEditorScreen:wheelmoved(x, y)
+    if self.leftMenu and self.leftMenu:wheelmoved(x, y) then
+        return
+    end
+    -- Handle other wheel events here if needed
+end
+
+function CreatureEditorScreen:onCreatureSelected(creatureName, creature)
+    -- Load the selected creature into the editor
+    if creature and creature.pattern then
+        -- Clear the current grid
+        self:clearGrid()
+
+        -- Load the creature pattern
+        for y, row in ipairs(creature.pattern) do
+            for x, cell in ipairs(row) do
+                if x <= Config.gridWidth and y <= Config.gridHeight then
+                    self.editorGrid[x][y] = cell
+                end
+            end
+        end
+
+        -- Set the creature name and description
+        self.creatureName = creature.name or creatureName
+        self.creatureDescription = creature.description or ""
+
+        print("Loaded creature: " .. self.creatureName)
     end
 end
 

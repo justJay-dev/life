@@ -4,6 +4,7 @@ local State = require("engine.state")
 local creatures = require("creatures.init")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
+local LeftMenu = require("ui.left-menu")
 
 local SimulationScreen = GameScreen:new()
 
@@ -13,6 +14,12 @@ function SimulationScreen:enter()
 
     -- Initialize grids
     self:initializeGrid()
+
+    -- Create left menu
+    self.leftMenu = LeftMenu:new(0, 0, 220)
+    self.leftMenu:setOnCreatureSelect(function(creatureName, creature)
+        self:onCreatureSelected(creatureName, creature)
+    end)
 
     -- Randomly spawn creatures
     math.randomseed(os.time()) -- Seed the random number generator
@@ -43,11 +50,23 @@ function SimulationScreen:update(dt)
         self:updateGrid()
         State.timer = 0
     end
+
+    -- Update left menu
+    if self.leftMenu then
+        self.leftMenu:update(dt)
+    end
 end
 
 function SimulationScreen:draw()
     -- Clear background
     love.graphics.clear(0, 0, 0)
+
+    -- Calculate grid offset based on left menu
+    local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+
+    -- Save current transform
+    love.graphics.push()
+    love.graphics.translate(gridOffsetX, 0)
 
     -- Draw grid using inherited method
     self:drawSimulationGrid(State.grid)
@@ -56,8 +75,16 @@ function SimulationScreen:draw()
     love.graphics.setColor(1, 1, 1)
     local statusText = State.running and "Running (SPACE to pause)" or "Paused (SPACE to start)"
     love.graphics.print(statusText, 10, Config.gridHeight * Config.cellSize + 10)
-    love.graphics.print("Click to toggle cells | R to reset | M for menu | ESC to quit", 10,
+    love.graphics.print("Click to toggle cells | R to reset | M for menu | L to toggle creature list | ESC to quit", 10,
         Config.gridHeight * Config.cellSize + 25)
+
+    -- Restore transform
+    love.graphics.pop()
+
+    -- Draw left menu on top
+    if self.leftMenu then
+        self.leftMenu:draw()
+    end
 end
 
 function SimulationScreen:updateGrid()
@@ -101,8 +128,17 @@ function SimulationScreen:countNeighbors(x, y)
 end
 
 function SimulationScreen:mousepressed(x, y, button)
+    -- Check if left menu handled the click first
+    if self.leftMenu and self.leftMenu:mousepressed(x, y, button) then
+        return
+    end
+
     if button == 1 then -- Left mouse button
-        local gridX = math.floor(x / Config.cellSize) + 1
+        -- Adjust for grid offset
+        local gridOffsetX = self.leftMenu and self.leftMenu.visible and self.leftMenu.width or 0
+        local adjustedX = x - gridOffsetX
+
+        local gridX = math.floor(adjustedX / Config.cellSize) + 1
         local gridY = math.floor(y / Config.cellSize) + 1
 
         if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
@@ -122,8 +158,38 @@ function SimulationScreen:keypressed(key)
     elseif key == "m" then
         -- Go back to main menu
         ScreenManager:switchTo("main_menu")
+    elseif key == "l" then
+        -- Toggle left menu visibility
+        if self.leftMenu then
+            self.leftMenu:toggle()
+        end
     elseif key == "escape" then
         love.event.quit()
+    end
+end
+
+function SimulationScreen:mousemoved(x, y)
+    if self.leftMenu then
+        self.leftMenu:mousemoved(x, y)
+    end
+end
+
+function SimulationScreen:wheelmoved(x, y)
+    if self.leftMenu and self.leftMenu:wheelmoved(x, y) then
+        return
+    end
+    -- Handle other wheel events here if needed
+end
+
+function SimulationScreen:onCreatureSelected(creatureName, creature)
+    -- You can add logic here to handle creature selection
+    -- For example, you might want to show creature info or prepare for placement
+    print("Selected creature: " .. creatureName)
+    if creature and creature.name then
+        print("Creature name: " .. creature.name)
+    end
+    if creature and creature.description then
+        print("Description: " .. creature.description)
     end
 end
 
