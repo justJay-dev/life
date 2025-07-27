@@ -381,11 +381,26 @@ function CreatureEditorScreen:onCreatureSelected(creatureName, creature)
         -- Clear the current grid
         self:clearGrid()
 
-        -- Load the creature pattern
+        -- Calculate pattern size
+        local patternHeight = #creature.pattern
+        local patternWidth = 0
+        for _, row in ipairs(creature.pattern) do
+            if #row > patternWidth then
+                patternWidth = #row
+            end
+        end
+
+        -- Calculate offsets to center the pattern
+        local offsetX = math.floor((Config.gridWidth - patternWidth) / 2)
+        local offsetY = math.floor((Config.gridHeight - patternHeight) / 2)
+
+        -- Load the creature pattern centered
         for y, row in ipairs(creature.pattern) do
             for x, cell in ipairs(row) do
-                if x <= Config.gridWidth and y <= Config.gridHeight then
-                    self.editorGrid[x][y] = cell
+                local gridX = x + offsetX
+                local gridY = y + offsetY
+                if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
+                    self.editorGrid[gridX][gridY] = cell
                 end
             end
         end
