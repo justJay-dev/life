@@ -6,8 +6,9 @@ function Config:new()
         gridWidth = 80,
         gridHeight = 60,
         cellSize = 10,
-        updateRate = 0.1, -- seconds
-        debug = false     -- Set to true to enable debug print statements
+        updateRate = 0.1,                                                                                     -- seconds
+        debug = arg and type(arg) == "table" and (table.concat(arg, " "):find("%-%-console") ~= nil) or
+        false                                                                                                 -- Set to true to enable debug print statements
     }
     setmetatable(instance, Config)
     return instance
