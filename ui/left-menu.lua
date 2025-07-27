@@ -1,5 +1,6 @@
 local Button = require("ui.button")
 local creatures = require("creatures.init")
+local Config = require("engine.config")
 
 local LeftMenu = {}
 LeftMenu.__index = LeftMenu
@@ -218,23 +219,33 @@ function LeftMenu:draw()
 end
 
 function LeftMenu:mousepressed(x, y, button)
+    Config:debugPrint("=== LeftMenu:mousepressed ===")
+    Config:debugPrint("Click at:", x, y, "button:", button)
+
     -- Check if click is within menu bounds
     if x < self.x or x > self.x + self.width or y < self.y or y > self.y + self.height then
+        Config:debugPrint("Click outside menu bounds")
         return false
     end
 
+    Config:debugPrint("Click inside menu bounds")
+
     -- Check creature button clicks
-    for _, item in ipairs(self.creatureButtons) do
+    for i, item in ipairs(self.creatureButtons) do
         if item.mousepressed then
             local adjustedY = y + self.scrollOffset
+            Config:debugPrint("Checking button", i, "at", item.x, item.y, "size", item.width, item.height)
+            Config:debugPrint("Adjusted Y:", adjustedY, "original Y:", y, "scroll offset:", self.scrollOffset)
+
             if x >= item.x and x <= item.x + item.width and
                 adjustedY >= item.y and adjustedY <= item.y + item.height then
+                Config:debugPrint("Button hit! Calling mousepressed for", item.creatureName or "unknown")
                 item:mousepressed(x, adjustedY, button)
                 return true
             end
         end
     end
-
+    Config:debugPrint("No button hit")
     return true -- Consume the click even if no button was pressed
 end
 

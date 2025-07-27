@@ -1,4 +1,5 @@
 local Creature = require("engine/creature")
+local Config = require("engine.config")
 -- Creatures module - loads and manages all Game of Life patterns
 local creatures = {}
 
@@ -26,7 +27,7 @@ local function loadCustomCreatures()
         -- Check if it's a JSON file
         if filename:match("%.json$") then
             local filepath = customDir .. "/" .. filename
-            print("Loading custom creature: " .. filepath)
+            Config:debugPrint("Loading custom creature: " .. filepath)
 
             -- Extract creature name from filename (remove .json extension)
             local creatureName = filename:gsub("%.json$", "")
@@ -35,9 +36,9 @@ local function loadCustomCreatures()
             local creature = Creature.loadFromFile(filepath)
             if creature then
                 creatures[creatureName] = creature
-                print("Successfully loaded custom creature: " .. creatureName)
+                Config:debugPrint("Successfully loaded custom creature: " .. creatureName)
             else
-                print("Failed to load custom creature: " .. filename)
+                Config:debugPrint("Failed to load custom creature: " .. filename)
             end
         end
     end
@@ -87,7 +88,7 @@ function creatures.getNames()
 end
 
 -- Function to randomly spawn creatures across the grid
-function creatures.spawnRandom(grid, gridWidth, gridHeight, count)
+function creatures.spawnRandom(grid, gridWidth, gridHeight, count, excludeZone)
     local creatureNames = creatures.getNames()
     if #creatureNames == 0 then return end
 
@@ -109,16 +110,33 @@ function creatures.spawnRandom(grid, gridWidth, gridHeight, count)
                 local x = math.random(1, math.max(1, gridWidth - size.width))
                 local y = math.random(1, math.max(1, gridHeight - size.height))
 
+                -- Check if this creature would overlap with the exclusion zone (spawning pool)
+                local inExclusionZone = false
+                if excludeZone then
+                    local creatureEndX = x + size.width - 1
+                    local creatureEndY = y + size.height - 1
+
+                    -- Check if creature overlaps with exclusion zone
+                    if not (creatureEndX < excludeZone.startX or x > excludeZone.endX or
+                            creatureEndY < excludeZone.startY or y > excludeZone.endY) then
+                        inExclusionZone = true
+                    end
+                end
+
                 -- Check if this area is clear (simple overlap prevention)
                 local clear = true
-                for checkX = x, math.min(x + size.width - 1, gridWidth) do
-                    for checkY = y, math.min(y + size.height - 1, gridHeight) do
-                        if grid[checkX] and grid[checkX][checkY] then
-                            clear = false
-                            break
+                if not inExclusionZone then
+                    for checkX = x, math.min(x + size.width - 1, gridWidth) do
+                        for checkY = y, math.min(y + size.height - 1, gridHeight) do
+                            if grid[checkX] and grid[checkX][checkY] then
+                                clear = false
+                                break
+                            end
                         end
+                        if not clear then break end
                     end
-                    if not clear then break end
+                else
+                    clear = false -- Force retry if in exclusion zone
                 end
 
                 if clear then

@@ -7,9 +7,6 @@ local Button = require("ui.button")
 local MainMenuScreen = GameScreen:new()
 
 function MainMenuScreen:enter()
-    -- Reset any game state when entering menu
-    love.window.setTitle("Conway's Game of Life - Main Menu")
-
     -- Create buttons
     local windowWidth = love.graphics.getWidth()
     local windowHeight = love.graphics.getHeight()
@@ -96,10 +93,10 @@ end
 function MainMenuScreen:mousepressed(x, y, button)
     if button == 1 then -- Left mouse button
         if self.playButton then
-            self.playButton:mousepressed(button)
+            self.playButton:mousepressed(x, y, button)
         end
         if self.editorButton then
-            self.editorButton:mousepressed(button)
+            self.editorButton:mousepressed(x, y, button)
         end
     end
 end

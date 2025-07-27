@@ -1,3 +1,5 @@
+local Config = require("engine.config")
+
 local Button = {}
 Button.__index = Button
 
@@ -59,10 +61,25 @@ function Button:update(dt)
     end
 end
 
-function Button:mousepressed(button)
-    if button == 1 and self.hovered and self.enabled then
-        self.callback()
+function Button:mousepressed(x, y, button)
+    Config:debugPrint("=== Button:mousepressed ===")
+    Config:debugPrint("Button:", self.text, "enabled:", self.enabled)
+    Config:debugPrint("Click at:", x, y, "Button bounds:", self.x, self.y, self.width, self.height)
+
+    if button == 1 and self.enabled then
+        -- Check if click is within button bounds
+        local isInBounds = x >= self.x and x <= self.x + self.width and
+            y >= self.y and y <= self.y + self.height
+        Config:debugPrint("Is in bounds:", isInBounds)
+
+        if isInBounds then
+            Config:debugPrint("Calling callback for button:", self.text)
+            self.callback()
+            return true
+        end
     end
+
+    return false
 end
 
 function Button:setEnabled(enabled)

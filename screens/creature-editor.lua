@@ -10,8 +10,6 @@ local LeftMenu = require("ui.left-menu")
 local CreatureEditorScreen = GameScreen:new()
 
 function CreatureEditorScreen:enter()
-    love.window.setTitle("Conway's Game of Life - Creature Editor")
-
     -- Initialize editor state
     self.editorGrid = {}
     self.creatureName = ""
@@ -64,7 +62,7 @@ function CreatureEditorScreen:createButtons()
     self.saveButton = Button:new(280, buttonY, 60, buttonHeight, "Save", function()
         if self.creatureName ~= "" and self:hasPattern() then
             local success, message = self:saveCreature()
-            print(message) -- You could show this in a popup later
+            Config:debugPrint(message) -- You could show this in a popup later
             if success and self.leftMenu then
                 -- Refresh the left menu to show the newly saved creature
                 self.leftMenu:refresh()
@@ -396,7 +394,7 @@ function CreatureEditorScreen:onCreatureSelected(creatureName, creature)
         self.creatureName = creature.name or creatureName
         self.creatureDescription = creature.description or ""
 
-        print("Loaded creature: " .. self.creatureName)
+        Config:debugPrint("Loaded creature: " .. self.creatureName)
     end
 end
 

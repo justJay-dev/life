@@ -9,9 +9,6 @@ local LeftMenu = require("ui.left-menu")
 local SimulationScreen = GameScreen:new()
 
 function SimulationScreen:enter()
-    -- Set window title
-    love.window.setTitle("Conway's Game of Life - Simulation")
-
     -- Initialize grids
     self:initializeGrid()
     -- Create left menu
@@ -20,9 +17,17 @@ function SimulationScreen:enter()
         self:onCreatureSelected(creatureName, creature)
     end)
 
-    -- Randomly spawn creatures
+    -- Randomly spawn creatures (avoiding the spawning pool)
     math.randomseed(os.time()) -- Seed the random number generator
-    creatures.spawnRandom(State.grid, Config.gridWidth, Config.gridHeight)
+    local poolStartX, poolStartY, poolEndX, poolEndY = self:getSpawningPoolBounds()
+    local excludeZone = {
+        startX = poolStartX,
+        startY = poolStartY,
+        endX = poolEndX,
+        endY = poolEndY
+    }
+    creatures.spawnRandom(State.grid, Config.gridWidth, Config.gridHeight, nil, excludeZone)
+    Config:debugPrint("Randomly spawned creatures in the grid (avoiding spawning pool)")
 end
 
 function SimulationScreen:leave()
@@ -67,8 +72,8 @@ function SimulationScreen:draw()
     love.graphics.push()
     love.graphics.translate(gridOffsetX, 0)
 
-    -- Draw grid using inherited method
-    self:drawSimulationGrid(State.grid)
+    -- Draw grid with spawning pool
+    self:drawSimulationGridWithPool(State.grid)
 
     -- Draw UI
     love.graphics.setColor(1, 1, 1)
@@ -154,8 +159,15 @@ function SimulationScreen:keypressed(key)
     elseif key == "r" then
         self:initializeGrid()
         State.running = false
-        -- Randomly spawn creatures again
-        creatures.spawnRandom(State.grid, Config.gridWidth, Config.gridHeight)
+        -- Randomly spawn creatures again (avoiding the spawning pool)
+        local poolStartX, poolStartY, poolEndX, poolEndY = self:getSpawningPoolBounds()
+        local excludeZone = {
+            startX = poolStartX,
+            startY = poolStartY,
+            endX = poolEndX,
+            endY = poolEndY
+        }
+        creatures.spawnRandom(State.grid, Config.gridWidth, Config.gridHeight, nil, excludeZone)
     elseif key == "m" then
         -- Go back to main menu
         ScreenManager:switchTo("main_menu")
@@ -178,32 +190,70 @@ function SimulationScreen:wheelmoved(x, y)
 end
 
 function SimulationScreen:onCreatureSelected(creatureName, creature)
-    if creature and creature.pattern then
-        self:spawnCreatureRandomly(creature)
+    Config:debugPrint("=== onCreatureSelected called ===")
+    Config:debugPrint("creatureName:", creatureName)
+    Config:debugPrint("creature:", creature)
+    if creature then
+        Config:debugPrint("creature.pattern:", creature.pattern)
+        if creature.pattern then
+            Config:debugPrint("Pattern found, calling spawnCreatureInCenter")
+            self:spawnCreatureInCenter(creature)
+        else
+            Config:debugPrint("No pattern in creature")
+        end
+    else
+        Config:debugPrint("No creature object")
     end
 end
 
-function SimulationScreen:spawnCreatureRandomly(creature)
-    if not creature or not creature.pattern then return end
+function SimulationScreen:spawnCreatureInCenter(creature)
+    Config:debugPrint("=== spawnCreatureInCenter called ===")
+    if not creature or not creature.pattern then
+        Config:debugPrint("Early return: no creature or pattern")
+        return
+    end
 
     -- Get pattern dimensions
     local patternHeight = #creature.pattern
     local patternWidth = patternHeight > 0 and #creature.pattern[1] or 0
+    Config:debugPrint("Pattern dimensions:", patternWidth, "x", patternHeight)
 
-    if patternWidth == 0 or patternHeight == 0 then return end
+    if patternWidth == 0 or patternHeight == 0 then
+        Config:debugPrint("Early return: zero dimensions")
+        return
+    end
 
-    -- Find a valid random position (with some margin from edges)
-    local margin = 2
-    local maxX = Config.gridWidth - patternWidth - margin
-    local maxY = Config.gridHeight - patternHeight - margin
+    -- Get spawning pool bounds
+    local poolStartX, poolStartY, poolEndX, poolEndY = self:getSpawningPoolBounds()
+    local poolWidth = poolEndX - poolStartX + 1
+    local poolHeight = poolEndY - poolStartY + 1
 
-    if maxX < margin or maxY < margin then return end
+    -- Check if pattern fits in the spawning pool
+    if patternWidth > poolWidth or patternHeight > poolHeight then
+        Config:debugPrint("Early return: pattern too large for spawning pool")
+        return
+    end
 
-    -- Place it at a random location
-    local startX = math.random(margin + 1, maxX)
-    local startY = math.random(margin + 1, maxY)
+    -- Calculate random position within the spawning pool
+    local maxStartX = poolEndX - patternWidth + 1
+    local maxStartY = poolEndY - patternHeight + 1
+    local startX = math.random(poolStartX, maxStartX)
+    local startY = math.random(poolStartY, maxStartY)
+    Config:debugPrint("Spawning in pool at:", startX, startY)
+
+    -- Clear the spawning area first to avoid overlap
+    for py = 1, patternHeight do
+        for px = 1, patternWidth do
+            local gridX = startX + px - 1
+            local gridY = startY + py - 1
+            if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
+                State.grid[gridX][gridY] = false
+            end
+        end
+    end
 
     -- Place the pattern
+    local cellsSet = 0
     for py = 1, patternHeight do
         for px = 1, patternWidth do
             if creature.pattern[py][px] then
@@ -211,7 +261,68 @@ function SimulationScreen:spawnCreatureRandomly(creature)
                 local gridY = startY + py - 1
                 if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
                     State.grid[gridX][gridY] = true
+                    cellsSet = cellsSet + 1
+                    Config:debugPrint("Set cell at", gridX, gridY)
                 end
+            end
+        end
+    end
+    Config:debugPrint("Total cells set:", cellsSet)
+end
+
+function SimulationScreen:getSpawningPoolBounds()
+    -- Define spawning pool as a region in the center of the grid
+    -- Make it large enough to accommodate most creatures
+    local poolWidth = math.min(20, math.floor(Config.gridWidth * 0.4))
+    local poolHeight = math.min(20, math.floor(Config.gridHeight * 0.4))
+
+    local startX = math.floor((Config.gridWidth - poolWidth) / 2) + 1
+    local startY = math.floor((Config.gridHeight - poolHeight) / 2) + 1
+    local endX = startX + poolWidth - 1
+    local endY = startY + poolHeight - 1
+
+    return startX, startY, endX, endY, poolWidth, poolHeight
+end
+
+function SimulationScreen:drawSpawningPool()
+    local startX, startY, endX, endY = self:getSpawningPoolBounds()
+
+    -- Draw the spawning pool background
+    love.graphics.setColor(0.1, 0.3, 0.1, 0.3) -- Semi-transparent green
+    local screenX = (startX - 1) * Config.cellSize
+    local screenY = (startY - 1) * Config.cellSize
+    local poolScreenWidth = (endX - startX + 1) * Config.cellSize
+    local poolScreenHeight = (endY - startY + 1) * Config.cellSize
+
+    love.graphics.rectangle("fill", screenX, screenY, poolScreenWidth, poolScreenHeight)
+
+    -- Draw a border around the spawning pool
+    love.graphics.setColor(0.2, 0.6, 0.2, 0.8) -- More opaque green border
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", screenX, screenY, poolScreenWidth, poolScreenHeight)
+    love.graphics.setLineWidth(1) -- Reset line width
+end
+
+function SimulationScreen:drawSimulationGridWithPool(grid)
+    -- First draw the spawning pool
+    self:drawSpawningPool()
+
+    -- Then draw the regular grid on top
+    local Config = require("engine.config")
+    local aliveColor = { 1, 1, 1 }      -- White for alive cells
+    local deadColor = { 0.1, 0.1, 0.1 } -- Dark gray for dead cells
+
+    for x = 1, Config.gridWidth do
+        for y = 1, Config.gridHeight do
+            local screenX = (x - 1) * Config.cellSize
+            local screenY = (y - 1) * Config.cellSize
+
+            if grid[x][y] then
+                love.graphics.setColor(aliveColor[1], aliveColor[2], aliveColor[3])
+                love.graphics.rectangle("fill", screenX, screenY, Config.cellSize, Config.cellSize)
+            else
+                love.graphics.setColor(deadColor[1], deadColor[2], deadColor[3])
+                love.graphics.rectangle("line", screenX, screenY, Config.cellSize, Config.cellSize)
             end
         end
     end
