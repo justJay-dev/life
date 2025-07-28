@@ -1,5 +1,6 @@
 function love.conf(t)
     t.window.title = "Life Simulation"
+    t.window.icon = "assets/icon.png" -- Set the window icon
     t.window.width = 800
     t.window.height = 600
     t.console = true           -- Enable console for debugging

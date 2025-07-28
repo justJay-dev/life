@@ -5,6 +5,7 @@ local creatures = require("creatures.init")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
 local LeftMenu = require("ui.left-menu")
+local Colors = require("engine.colors")
 
 local SimulationScreen = GameScreen:new()
 
@@ -63,7 +64,8 @@ end
 
 function SimulationScreen:draw()
     -- Clear background
-    love.graphics.clear(0, 0, 0)
+    local bgColor = Colors.ui.mainBackground
+    love.graphics.clear(bgColor[1], bgColor[2], bgColor[3])
 
     -- Calculate grid offset based on left menu
     local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
@@ -76,7 +78,8 @@ function SimulationScreen:draw()
     self:drawSimulationGridWithPool(State.grid)
 
     -- Draw UI
-    love.graphics.setColor(1, 1, 1)
+    local textColor = Colors.ui.textDefault
+    love.graphics.setColor(textColor[1], textColor[2], textColor[3])
     local statusText = State.running and "Running (SPACE to pause)" or "Paused (SPACE to start)"
     love.graphics.print(statusText, 10, Config.gridHeight * Config.cellSize + 10)
     love.graphics.print("Click to toggle cells | R to reset | M for menu | ESC to quit", 10,
@@ -98,16 +101,41 @@ function SimulationScreen:updateGrid()
     for x = 1, Config.gridWidth do
         for y = 1, Config.gridHeight do
             local neighbors = self:countNeighbors(x, y)
-            local alive = State.grid[x][y]
+            local currentCell = State.grid[x][y]
+            local alive = false
+            local cellColor = Colors.defaultCreatureColor -- default color for new cells
+
+            -- Handle both object and boolean cell formats
+            if type(currentCell) == "table" then
+                alive = currentCell.alive
+                cellColor = currentCell.color or Colors.defaultCreatureColor
+            elseif currentCell then
+                alive = true
+            end
 
             -- Conway's Game of Life rules:
             -- 1. Any live cell with 2 or 3 neighbors survives
             -- 2. Any dead cell with exactly 3 neighbors becomes alive
             -- 3. All other cells die or stay dead
+            local willSurvive = false
             if alive then
-                State.nextGrid[x][y] = (neighbors == 2 or neighbors == 3)
+                willSurvive = (neighbors == 2 or neighbors == 3)
             else
-                State.nextGrid[x][y] = (neighbors == 3)
+                willSurvive = (neighbors == 3)
+            end
+
+            if willSurvive then
+                -- Preserve color when cell survives or gets born
+                -- For birth, inherit color from a random neighbor or use default
+                if not alive then
+                    cellColor = self:getNeighborColor(x, y) or Colors.defaultCreatureColor
+                end
+                State.nextGrid[x][y] = {
+                    alive = true,
+                    color = cellColor
+                }
+            else
+                State.nextGrid[x][y] = false
             end
         end
     end
@@ -123,7 +151,17 @@ function SimulationScreen:countNeighbors(x, y)
             if dx ~= 0 or dy ~= 0 then -- Don't count the cell itself
                 local nx, ny = x + dx, y + dy
                 if nx >= 1 and nx <= Config.gridWidth and ny >= 1 and ny <= Config.gridHeight then
-                    if State.grid[nx][ny] then
+                    local cell = State.grid[nx][ny]
+                    local isAlive = false
+
+                    -- Handle both object and boolean cell formats
+                    if type(cell) == "table" then
+                        isAlive = cell.alive
+                    elseif cell then
+                        isAlive = true
+                    end
+
+                    if isAlive then
                         count = count + 1
                     end
                 end
@@ -131,6 +169,24 @@ function SimulationScreen:countNeighbors(x, y)
         end
     end
     return count
+end
+
+function SimulationScreen:getNeighborColor(x, y)
+    -- Get color from a neighboring alive cell for new births
+    for dx = -1, 1 do
+        for dy = -1, 1 do
+            if dx ~= 0 or dy ~= 0 then -- Don't count the cell itself
+                local nx, ny = x + dx, y + dy
+                if nx >= 1 and nx <= Config.gridWidth and ny >= 1 and ny <= Config.gridHeight then
+                    local cell = State.grid[nx][ny]
+                    if type(cell) == "table" and cell.alive and cell.color then
+                        return cell.color
+                    end
+                end
+            end
+        end
+    end
+    return Colors.defaultCreatureColor -- default color if no colored neighbors found
 end
 
 function SimulationScreen:mousepressed(x, y, button)
@@ -148,7 +204,24 @@ function SimulationScreen:mousepressed(x, y, button)
         local gridY = math.floor(y / Config.cellSize) + 1
 
         if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-            State.grid[gridX][gridY] = not State.grid[gridX][gridY]
+            local currentCell = State.grid[gridX][gridY]
+            local isAlive = false
+
+            -- Handle both object and boolean cell formats
+            if type(currentCell) == "table" then
+                isAlive = currentCell.alive
+            elseif currentCell then
+                isAlive = true
+            end
+
+            if isAlive then
+                State.grid[gridX][gridY] = false
+            else
+                State.grid[gridX][gridY] = {
+                    alive = true,
+                    color = Colors.defaultCreatureColor -- default color for manually placed cells
+                }
+            end
         end
     end
 end
@@ -260,9 +333,13 @@ function SimulationScreen:spawnCreatureInCenter(creature)
                 local gridX = startX + px - 1
                 local gridY = startY + py - 1
                 if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-                    State.grid[gridX][gridY] = true
+                    State.grid[gridX][gridY] = {
+                        alive = true,
+                        color = creature.color or Colors.defaultCreatureColor
+                    }
                     cellsSet = cellsSet + 1
-                    Config:debugPrint("Set cell at", gridX, gridY)
+                    Config:debugPrint("Set cell at", gridX, gridY, "with color",
+                        creature.color or Colors.defaultCreatureColor)
                 end
             end
         end
@@ -288,7 +365,8 @@ function SimulationScreen:drawSpawningPool()
     local startX, startY, endX, endY = self:getSpawningPoolBounds()
 
     -- Draw the spawning pool background
-    love.graphics.setColor(0.1, 0.3, 0.1, 0.3) -- Semi-transparent green
+    local bgColor = Colors.ui.poolBackground
+    love.graphics.setColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
     local screenX = (startX - 1) * Config.cellSize
     local screenY = (startY - 1) * Config.cellSize
     local poolScreenWidth = (endX - startX + 1) * Config.cellSize
@@ -297,7 +375,8 @@ function SimulationScreen:drawSpawningPool()
     love.graphics.rectangle("fill", screenX, screenY, poolScreenWidth, poolScreenHeight)
 
     -- Draw a border around the spawning pool
-    love.graphics.setColor(0.2, 0.6, 0.2, 0.8) -- More opaque green border
+    local borderColor = Colors.ui.poolBorder
+    love.graphics.setColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", screenX, screenY, poolScreenWidth, poolScreenHeight)
     love.graphics.setLineWidth(1) -- Reset line width
@@ -307,25 +386,8 @@ function SimulationScreen:drawSimulationGridWithPool(grid)
     -- First draw the spawning pool
     self:drawSpawningPool()
 
-    -- Then draw the regular grid on top
-    local Config = require("engine.config")
-    local aliveColor = { 1, 1, 1 }      -- White for alive cells
-    local deadColor = { 0.1, 0.1, 0.1 } -- Dark gray for dead cells
-
-    for x = 1, Config.gridWidth do
-        for y = 1, Config.gridHeight do
-            local screenX = (x - 1) * Config.cellSize
-            local screenY = (y - 1) * Config.cellSize
-
-            if grid[x][y] then
-                love.graphics.setColor(aliveColor[1], aliveColor[2], aliveColor[3])
-                love.graphics.rectangle("fill", screenX, screenY, Config.cellSize, Config.cellSize)
-            else
-                love.graphics.setColor(deadColor[1], deadColor[2], deadColor[3])
-                love.graphics.rectangle("line", screenX, screenY, Config.cellSize, Config.cellSize)
-            end
-        end
-    end
+    -- Then draw the regular grid on top using the inherited method that handles colors
+    self:drawGrid(grid, Colors.ui.aliveDefault, Colors.ui.deadDefault)
 end
 
 return SimulationScreen

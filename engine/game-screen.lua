@@ -1,3 +1,4 @@
+local Colors = require("engine.colors")
 -- Base GameScreen class - provides common functionality for all screens
 local GameScreen = {}
 GameScreen.__index = GameScreen
@@ -59,16 +60,31 @@ end
 -- Grid drawing methods
 function GameScreen:drawGrid(grid, aliveColor, deadColor)
     local Config = require("engine.config")
-    aliveColor = aliveColor or { 1, 1, 1 }     -- Default white
-    deadColor = deadColor or { 0.1, 0.1, 0.1 } -- Default dark gray
+
+    aliveColor = aliveColor or Colors.ui.aliveDefault
+    deadColor = deadColor or Colors.ui.deadDefault
 
     for x = 1, Config.gridWidth do
         for y = 1, Config.gridHeight do
             local screenX = (x - 1) * Config.cellSize
             local screenY = (y - 1) * Config.cellSize
 
-            if grid[x][y] then
-                love.graphics.setColor(aliveColor[1], aliveColor[2], aliveColor[3])
+            local cell = grid[x][y]
+            local isAlive = false
+            local cellColor = aliveColor
+
+            -- Handle both new object format and legacy boolean format
+            if type(cell) == "table" then
+                isAlive = cell.alive
+                if cell.color then
+                    cellColor = Colors.getCreatureColor(cell.color)
+                end
+            elseif cell then
+                isAlive = true
+            end
+
+            if isAlive then
+                love.graphics.setColor(cellColor[1], cellColor[2], cellColor[3])
                 love.graphics.rectangle("fill", screenX, screenY, Config.cellSize, Config.cellSize)
             else
                 love.graphics.setColor(deadColor[1], deadColor[2], deadColor[3])
@@ -79,11 +95,11 @@ function GameScreen:drawGrid(grid, aliveColor, deadColor)
 end
 
 function GameScreen:drawSimulationGrid(grid)
-    self:drawGrid(grid, { 1, 1, 1 }, { 0.1, 0.1, 0.1 }) -- White alive, dark gray dead
+    self:drawGrid(grid, Colors.ui.aliveDefault, Colors.ui.deadDefault)
 end
 
 function GameScreen:drawEditorGrid(grid)
-    self:drawGrid(grid, { 0.9, 0.9, 0.9 }, { 0.2, 0.2, 0.2 }) -- Light gray alive, darker gray dead
+    self:drawGrid(grid, Colors.ui.editorAlive, Colors.ui.editorDead)
 end
 
 return GameScreen

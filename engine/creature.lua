@@ -1,12 +1,17 @@
+local Colors = require("engine.colors")
 -- Base Creature class for Game of Life patterns
 local Creature = {}
 Creature.__index = Creature
 
 function Creature:new(name, description, pattern)
+    -- Randomly select a color from available options
+    local selectedColor = Colors.getRandomCreatureColor()
+
     local instance = {
         name = name,
         description = description,
         pattern = pattern or {},
+        color = selectedColor,
         width = 0,
         height = 0
     }
@@ -34,7 +39,10 @@ function Creature:create(grid, x, y, gridWidth, gridHeight)
                 local gridX = x + col - 1
                 local gridY = y + row - 1
                 if gridX >= 1 and gridX <= gridWidth and gridY >= 1 and gridY <= gridHeight then
-                    grid[gridX][gridY] = true
+                    grid[gridX][gridY] = {
+                        alive = true,
+                        color = self.color
+                    }
                 end
             end
         end
@@ -53,6 +61,10 @@ end
 
 function Creature:getName()
     return self.name
+end
+
+function Creature:getColor()
+    return self.color
 end
 
 function Creature.loadFromFile(filename)

@@ -3,6 +3,7 @@ local Config = require("engine.config")
 local ScreenManager = require("engine.screen-manager")
 local GameScreen = require("engine.game-screen")
 local Button = require("ui.button")
+local Colors = require("engine.colors")
 
 local MainMenuScreen = GameScreen:new()
 
@@ -45,10 +46,12 @@ function MainMenuScreen:draw()
     local windowHeight = love.graphics.getHeight()
 
     -- Set background color to dark blue
-    love.graphics.clear(0.1, 0.1, 0.3)
+    local bgColor = Colors.ui.menuBackground
+    love.graphics.clear(bgColor[1], bgColor[2], bgColor[3])
 
     -- Title
-    love.graphics.setColor(1, 1, 1)
+    local textColor = Colors.ui.textDefault
+    love.graphics.setColor(textColor[1], textColor[2], textColor[3])
     local titleFont = love.graphics.newFont(48)
     love.graphics.setFont(titleFont)
     local title = "Conway's Game of Life"

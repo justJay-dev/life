@@ -92,7 +92,7 @@ function creatures.spawnRandom(grid, gridWidth, gridHeight, count, excludeZone)
     local creatureNames = creatures.getNames()
     if #creatureNames == 0 then return end
 
-    count = count or math.random(3, 6) -- Default to 3-6 creatures
+    count = count or math.random(6, 12) -- Default to 6-12 creatures
     local spawned = {}
 
     for i = 1, count do
@@ -128,7 +128,17 @@ function creatures.spawnRandom(grid, gridWidth, gridHeight, count, excludeZone)
                 if not inExclusionZone then
                     for checkX = x, math.min(x + size.width - 1, gridWidth) do
                         for checkY = y, math.min(y + size.height - 1, gridHeight) do
-                            if grid[checkX] and grid[checkX][checkY] then
+                            local cell = grid[checkX] and grid[checkX][checkY]
+                            local isAlive = false
+
+                            -- Handle both object and boolean cell formats
+                            if type(cell) == "table" then
+                                isAlive = cell.alive
+                            elseif cell then
+                                isAlive = true
+                            end
+
+                            if isAlive then
                                 clear = false
                                 break
                             end

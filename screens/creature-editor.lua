@@ -6,6 +6,7 @@ local GameScreen = require("engine.game-screen")
 local Button = require("ui.button")
 local Dialog = require("ui.dialog")
 local LeftMenu = require("ui.left-menu")
+local Colors = require("engine.colors")
 
 local CreatureEditorScreen = GameScreen:new()
 
@@ -152,7 +153,8 @@ end
 
 function CreatureEditorScreen:draw()
     -- Clear background
-    love.graphics.clear(0.05, 0.05, 0.15)
+    local bgColor = Colors.ui.editorBackground
+    love.graphics.clear(bgColor[1], bgColor[2], bgColor[3])
 
     -- Calculate grid offset based on left menu
     local gridOffsetX = self.leftMenu and self.leftMenu.width or 0
@@ -186,11 +188,13 @@ function CreatureEditorScreen:drawUI()
     local uiY = Config.gridHeight * Config.cellSize + 10
 
     -- Background for UI area
-    love.graphics.setColor(0.1, 0.1, 0.2)
+    local uiBgColor = Colors.ui.uiBackground
+    love.graphics.setColor(uiBgColor[1], uiBgColor[2], uiBgColor[3])
     love.graphics.rectangle("fill", 0, uiY - 5, windowWidth, 40)
 
     -- Instructions
-    love.graphics.setColor(1, 1, 1)
+    local textColor = Colors.ui.textDefault
+    love.graphics.setColor(textColor[1], textColor[2], textColor[3])
     love.graphics.setFont(love.graphics.newFont(14))
     love.graphics.print("Click or drag to draw/erase cells | Name: " .. self.creatureName, 10, uiY)
 
