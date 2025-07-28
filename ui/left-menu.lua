@@ -1,6 +1,7 @@
 local Button = require("ui.button")
 local creatures = require("creatures.init")
 local Config = require("engine.config")
+local Colors = require("engine.colors")
 
 local LeftMenu = {}
 LeftMenu.__index = LeftMenu
@@ -11,9 +12,9 @@ function LeftMenu:new(x, y, width)
     instance.y = y or 0
     instance.width = width or 200
     instance.height = love.graphics.getHeight()
-    instance.backgroundColor = { 0.1, 0.1, 0.1, 0.9 } -- Dark semi-transparent background
-    instance.borderColor = { 0.4, 0.4, 0.4 }
-    instance.textColor = { 1, 1, 1 }
+    instance.backgroundColor = Colors.ui.menuBackground
+    instance.borderColor = Colors.ui.border
+    instance.textColor = Colors.ui.textDefault
     instance.scrollOffset = 0
     instance.maxScrollOffset = 0
     instance.creatureButtons = {}

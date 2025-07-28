@@ -31,6 +31,7 @@ Colors.ui = {
     menuBackground = { 0.1, 0.1, 0.3 },      -- Dark blue for main menu
     editorBackground = { 0.05, 0.05, 0.15 }, -- Dark blue for editor
     uiBackground = { 0.1, 0.1, 0.2 },        -- UI area background
+    border = { 0.4, 0.4, 0.4 },              -- UI border color
 
     -- Text colors
     textDefault = { 1, 1, 1 }, -- White text
