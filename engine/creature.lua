@@ -4,14 +4,10 @@ local Creature = {}
 Creature.__index = Creature
 
 function Creature:new(name, description, pattern)
-    -- Randomly select a color from available options
-    local selectedColor = Colors.getRandomCreatureColor()
-
     local instance = {
         name = name,
         description = description,
         pattern = pattern or {},
-        color = selectedColor,
         width = 0,
         height = 0
     }
@@ -27,6 +23,9 @@ function Creature:new(name, description, pattern)
 end
 
 function Creature:create(grid, x, y, gridWidth, gridHeight)
+    -- Get a random color for this spawn
+    local spawnColor = Colors.getRandomCreatureColor()
+
     -- Check if the pattern fits within the grid boundaries
     if x + self.width - 1 > gridWidth or y + self.height - 1 > gridHeight then
         return false
@@ -41,7 +40,7 @@ function Creature:create(grid, x, y, gridWidth, gridHeight)
                 if gridX >= 1 and gridX <= gridWidth and gridY >= 1 and gridY <= gridHeight then
                     grid[gridX][gridY] = {
                         alive = true,
-                        color = self.color
+                        color = spawnColor
                     }
                 end
             end
@@ -61,10 +60,6 @@ end
 
 function Creature:getName()
     return self.name
-end
-
-function Creature:getColor()
-    return self.color
 end
 
 function Creature.loadFromFile(filename)

@@ -73,14 +73,12 @@ function GameScreen:drawGrid(grid, aliveColor, deadColor)
             local isAlive = false
             local cellColor = aliveColor
 
-            -- Handle both new object format and legacy boolean format
-            if type(cell) == "table" then
-                isAlive = cell.alive
-                if cell.color then
-                    cellColor = Colors.getCreatureColor(cell.color)
-                end
-            elseif cell then
+            -- Handle object format with color information
+            if type(cell) == "table" and cell.alive then
                 isAlive = true
+                if cell.color then
+                    cellColor = Colors.getAnyColor(cell.color)
+                end
             end
 
             if isAlive then

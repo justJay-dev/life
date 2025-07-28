@@ -42,8 +42,8 @@ function SimulationScreen:initializeGrid()
         State.grid[x] = {}
         State.nextGrid[x] = {}
         for y = 1, Config.gridHeight do
-            State.grid[x][y] = false
-            State.nextGrid[x][y] = false
+            State.grid[x][y] = { alive = false, color = Colors.defaultCreatureColor }
+            State.nextGrid[x][y] = { alive = false, color = Colors.defaultCreatureColor }
         end
     end
 end
@@ -105,12 +105,10 @@ function SimulationScreen:updateGrid()
             local alive = false
             local cellColor = Colors.defaultCreatureColor -- default color for new cells
 
-            -- Handle both object and boolean cell formats
-            if type(currentCell) == "table" then
-                alive = currentCell.alive
-                cellColor = currentCell.color or Colors.defaultCreatureColor
-            elseif currentCell then
+            -- Handle object format with color information
+            if type(currentCell) == "table" and currentCell.alive then
                 alive = true
+                cellColor = currentCell.color or Colors.defaultCreatureColor
             end
 
             -- Conway's Game of Life rules:
@@ -135,7 +133,7 @@ function SimulationScreen:updateGrid()
                     color = cellColor
                 }
             else
-                State.nextGrid[x][y] = false
+                State.nextGrid[x][y] = { alive = false, color = Colors.defaultCreatureColor }
             end
         end
     end
@@ -154,10 +152,8 @@ function SimulationScreen:countNeighbors(x, y)
                     local cell = State.grid[nx][ny]
                     local isAlive = false
 
-                    -- Handle both object and boolean cell formats
-                    if type(cell) == "table" then
-                        isAlive = cell.alive
-                    elseif cell then
+                    -- Handle object format
+                    if type(cell) == "table" and cell.alive then
                         isAlive = true
                     end
 
@@ -172,7 +168,9 @@ function SimulationScreen:countNeighbors(x, y)
 end
 
 function SimulationScreen:getNeighborColor(x, y)
-    -- Get color from a neighboring alive cell for new births
+    -- Get colors from all neighboring alive cells for new births
+    local neighborColors = {}
+
     for dx = -1, 1 do
         for dy = -1, 1 do
             if dx ~= 0 or dy ~= 0 then -- Don't count the cell itself
@@ -180,13 +178,30 @@ function SimulationScreen:getNeighborColor(x, y)
                 if nx >= 1 and nx <= Config.gridWidth and ny >= 1 and ny <= Config.gridHeight then
                     local cell = State.grid[nx][ny]
                     if type(cell) == "table" and cell.alive and cell.color then
-                        return cell.color
+                        table.insert(neighborColors, cell.color)
                     end
                 end
             end
         end
     end
-    return Colors.defaultCreatureColor -- default color if no colored neighbors found
+
+    -- If no colored neighbors, use default
+    if #neighborColors == 0 then
+        return Colors.defaultCreatureColor
+    end
+
+    -- If only one neighbor color, use that
+    if #neighborColors == 1 then
+        return neighborColors[1]
+    end
+
+    -- Multiple neighbors - check for color collisions
+    local resultColor = neighborColors[1]
+    for i = 2, #neighborColors do
+        resultColor = Colors.getColorCollision(resultColor, neighborColors[i])
+    end
+
+    return resultColor
 end
 
 function SimulationScreen:mousepressed(x, y, button)
@@ -207,15 +222,13 @@ function SimulationScreen:mousepressed(x, y, button)
             local currentCell = State.grid[gridX][gridY]
             local isAlive = false
 
-            -- Handle both object and boolean cell formats
-            if type(currentCell) == "table" then
-                isAlive = currentCell.alive
-            elseif currentCell then
+            -- Handle object format
+            if type(currentCell) == "table" and currentCell.alive then
                 isAlive = true
             end
 
             if isAlive then
-                State.grid[gridX][gridY] = false
+                State.grid[gridX][gridY] = { alive = false, color = Colors.defaultCreatureColor }
             else
                 State.grid[gridX][gridY] = {
                     alive = true,
@@ -286,6 +299,9 @@ function SimulationScreen:spawnCreatureInCenter(creature)
         return
     end
 
+    -- Get a random color for this spawn
+    local spawnColor = Colors.getRandomCreatureColor()
+
     -- Get pattern dimensions
     local patternHeight = #creature.pattern
     local patternWidth = patternHeight > 0 and #creature.pattern[1] or 0
@@ -320,7 +336,7 @@ function SimulationScreen:spawnCreatureInCenter(creature)
             local gridX = startX + px - 1
             local gridY = startY + py - 1
             if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-                State.grid[gridX][gridY] = false
+                State.grid[gridX][gridY] = { alive = false, color = Colors.defaultCreatureColor }
             end
         end
     end
@@ -335,11 +351,10 @@ function SimulationScreen:spawnCreatureInCenter(creature)
                 if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
                     State.grid[gridX][gridY] = {
                         alive = true,
-                        color = creature.color or Colors.defaultCreatureColor
+                        color = spawnColor
                     }
                     cellsSet = cellsSet + 1
-                    Config:debugPrint("Set cell at", gridX, gridY, "with color",
-                        creature.color or Colors.defaultCreatureColor)
+                    Config:debugPrint("Set cell at", gridX, gridY, "with color", spawnColor)
                 end
             end
         end

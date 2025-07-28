@@ -131,10 +131,8 @@ function creatures.spawnRandom(grid, gridWidth, gridHeight, count, excludeZone)
                             local cell = grid[checkX] and grid[checkX][checkY]
                             local isAlive = false
 
-                            -- Handle both object and boolean cell formats
-                            if type(cell) == "table" then
-                                isAlive = cell.alive
-                            elseif cell then
+                            -- Handle object format
+                            if type(cell) == "table" and cell.alive then
                                 isAlive = true
                             end
 

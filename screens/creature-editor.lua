@@ -96,7 +96,7 @@ function CreatureEditorScreen:clearGrid()
     for x = 1, Config.gridWidth do
         self.editorGrid[x] = {}
         for y = 1, Config.gridHeight do
-            self.editorGrid[x][y] = false
+            self.editorGrid[x][y] = { alive = false, color = "white" }
         end
     end
 end
@@ -188,7 +188,7 @@ function CreatureEditorScreen:drawUI()
     local uiY = Config.gridHeight * Config.cellSize + 10
 
     -- Background for UI area
-    local uiBgColor = Colors.ui.uiBackground
+    local uiBgColor = Colors.ui.menuBackground
     love.graphics.setColor(uiBgColor[1], uiBgColor[2], uiBgColor[3])
     love.graphics.rectangle("fill", 0, uiY - 5, windowWidth, 40)
 
@@ -353,7 +353,12 @@ end
 
 -- Simple function to toggle a cell's state
 function CreatureEditorScreen:toggleCell(x, y)
-    self.editorGrid[x][y] = not self.editorGrid[x][y]
+    local cell = self.editorGrid[x][y]
+    if cell.alive then
+        self.editorGrid[x][y] = { alive = false, color = "white" }
+    else
+        self.editorGrid[x][y] = { alive = true, color = "white" }
+    end
 end
 
 function CreatureEditorScreen:keypressed(key)
@@ -404,7 +409,12 @@ function CreatureEditorScreen:onCreatureSelected(creatureName, creature)
                 local gridX = x + offsetX
                 local gridY = y + offsetY
                 if gridX >= 1 and gridX <= Config.gridWidth and gridY >= 1 and gridY <= Config.gridHeight then
-                    self.editorGrid[gridX][gridY] = cell
+                    -- Convert any cell format to editor object format (always white in editor)
+                    if cell == true or (type(cell) == "table" and cell.alive) then
+                        self.editorGrid[gridX][gridY] = { alive = true, color = "white" }
+                    else
+                        self.editorGrid[gridX][gridY] = { alive = false, color = "white" }
+                    end
                 end
             end
         end
